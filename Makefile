@@ -1,2 +1,2 @@
-server: server.c
-	gcc -o server server.c -lpthread
+server: server.c files.c
+	gcc -o server server.c files.c -lpthread
