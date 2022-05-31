@@ -1,12 +1,13 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <errno.h>
 
 
 void *handle_request(void *ptr) {
@@ -21,7 +22,7 @@ void *handle_request(void *ptr) {
   sscanf(header, "GET %511[^ ] HTTP", url);
 
   char response[2048] = {0};
-  sprintf(response, "HTTP/1.1 200 OK\nContent-Length:1024\r\n\r\n <h1>You are visiting %s</h1>", url);
+  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length:1024\r\n\r\n <h1>You are visiting %s</h1>", url);
   send(client_fd, response, sizeof(response), 0);
   
 }
@@ -37,25 +38,28 @@ int main() {
 
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd == -1) {
-    printf("Socket creation error");
+    printf("Socket creation error: %s\n", strerror(errno));
   }
 
   status = bind(sockfd, (struct sockaddr *)&address, sizeof(address));
 
-  if (status < 0) {
-    printf("bind error");
+  if (status == -1) {
+    printf("Bind error: %s\n", strerror(errno));
   }
 
   status = listen(sockfd, 4);
   if (status < 0) {
-    printf("listen error");
+    printf("Listen error: %s\n", strerror(errno));
   }
+  
   pthread_t *thread_array = malloc(sizeof(pthread_t) * 4);
   unsigned int thread_counter = 0;
   unsigned int thread_array_size = 4;
   int address_size = sizeof(address);
   while (1) {
     int new_fd = accept(sockfd, (struct sockaddr *)&address, &address_size);
+
+    //double array that holds pthreads when max amount is reached in current array
     if (thread_counter == (thread_array_size - 1)) {
       pthread_t *new_array = malloc(sizeof(pthread_t) * thread_array_size * 2);
       memcpy(new_array, thread_array, sizeof(pthread_t) * thread_array_size);
@@ -63,6 +67,8 @@ int main() {
       free(thread_array);
       thread_array = new_array;
     }
+
+    //creates thread to handle each individial request - should switch to non-blocking sockets with thread pools later
     pthread_create(thread_array + thread_counter, NULL, handle_request, (void *)&new_fd);
     thread_counter++;
   }
