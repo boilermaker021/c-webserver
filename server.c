@@ -36,7 +36,7 @@ void *handle_request(void *ptr) {
   }
 
   char response[2048] = {0};
-  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\n\r\n%s", length, contents);
+  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s", length, contents);
   send(client_fd, response, sizeof(response), 0);
   close(client_fd);
   
