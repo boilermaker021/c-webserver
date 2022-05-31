@@ -76,8 +76,11 @@ int main() {
 
     //double array that holds pthreads when max amount is reached in current array
     if (thread_counter == (thread_array_size - 1)) {
+      pthread_t *new_array = malloc(sizeof(pthread_t) * thread_array_size * 2);
+      memcpy(new_array, thread_array, sizeof(pthread_t) * thread_array_size);
       thread_array_size *= 2;
-      thread_array = (pthread_t *) realloc(thread_array, sizeof(pthread_t) * thread_array_size);
+      free(thread_array);
+      thread_array = new_array;
     }
 
     //creates thread to handle each individial request - should switch to non-blocking sockets with thread pools later
