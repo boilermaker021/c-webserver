@@ -9,21 +9,36 @@
 #include <pthread.h>
 #include <errno.h>
 
+#include "files.h"
+
+
+#define PORT 5906
+
 
 void *handle_request(void *ptr) {
   int client_fd = *((int *)ptr);
   char buf[2048] = {0};
   recv(client_fd, buf, sizeof(buf), 0);
-  printf("%s\n", buf);
   
   char header[1024] = {0};
-  sscanf(buf, "%63[^\n]", header);
+  sscanf(buf, "%1023[^\n]", header);
   char url[512] = {0};
-  sscanf(header, "GET %511[^ ] HTTP", url);
+  sscanf(header, "GET /%511[^ ] HTTP", url);
+
+
+  char *contents = NULL;
+  int length = getfileasstring(url, &contents);
+  if (length < 0) { 
+    //file doesn't exist - HTTP error 404
+  }
+  else {
+    
+  }
 
   char response[2048] = {0};
-  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length:1024\r\n\r\n <h1>You are visiting %s</h1>", url);
+  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\n\r\n%s", length, contents);
   send(client_fd, response, sizeof(response), 0);
+  close(client_fd);
   
 }
 
@@ -32,7 +47,7 @@ int main() {
   int status;
   struct sockaddr_in address;
   address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_port = htons(5902);
+  address.sin_port = htons(PORT);
   address.sin_family = AF_INET;
 
 
@@ -51,7 +66,7 @@ int main() {
   if (status < 0) {
     printf("Listen error: %s\n", strerror(errno));
   }
-  
+
   pthread_t *thread_array = malloc(sizeof(pthread_t) * 4);
   unsigned int thread_counter = 0;
   unsigned int thread_array_size = 4;
