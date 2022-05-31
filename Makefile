@@ -1,2 +1,2 @@
-server: server.c types.h
+server: server.c
 	gcc -o server server.c -lpthread
