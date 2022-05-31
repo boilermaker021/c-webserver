@@ -12,7 +12,7 @@
 #include "files.h"
 
 
-#define PORT 5906
+#define PORT 5908
 
 
 void *handle_request(void *ptr) {
@@ -28,16 +28,20 @@ void *handle_request(void *ptr) {
 
   char *contents = NULL;
   int length = getfileasstring(url, &contents);
-  if (length < 0) { 
-    //file doesn't exist - HTTP error 404
+  if (length < 0) {
+    length = getfileasstring("test/404.html", &contents);
+    char response[2048] = {0};
+    sprintf(response, "HTTP/1.1 404 Not Found\r\nContent-Length: %d\r\n\r\n%s", length, contents);
+    send(client_fd, response, sizeof(response), 0);
+
   }
   else {
-    
+    char response[2048] = {0};
+    sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s", length, contents);
+    send(client_fd, response, sizeof(response), 0);
   }
 
-  char response[2048] = {0};
-  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s", length, contents);
-  send(client_fd, response, sizeof(response), 0);
+  
   close(client_fd);
   
 }
