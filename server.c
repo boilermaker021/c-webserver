@@ -12,7 +12,7 @@
 #include "files.h"
 
 
-#define PORT 5908
+#define PORT 5906
 
 
 void *handle_request(void *ptr) {
@@ -20,10 +20,14 @@ void *handle_request(void *ptr) {
   char buf[2048] = {0};
   recv(client_fd, buf, sizeof(buf), 0);
   
-  char header[1024] = {0};
-  sscanf(buf, "%1023[^\n]", header);
-  char url[512] = {0};
-  sscanf(header, "GET /%511[^ ] HTTP", url);
+  char header[8193] = {0};
+  sscanf(buf, "%8192[^\n]", header);
+  char url[2049] = {0};
+  sscanf(header, "GET /%2048[^ ] HTTP", url);
+  char extension[12] = { 0 };
+  char *type = strrchr(url, '.');
+  type++;
+
 
 
   char *contents = NULL;
@@ -37,7 +41,7 @@ void *handle_request(void *ptr) {
   }
   else {
     char response[2048] = {0};
-    sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s", length, contents);
+    sprintf(response, "HTTP/1.1 200 OK\r\nContent-Type: text/%s\r\nContent-Length: %d\r\n\r\n%s", type, length, contents);
     send(client_fd, response, sizeof(response), 0);
   }
 
